@@ -1,0 +1,38 @@
+name: Publish Meow Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "dist/meow-*.jar"
+      - ".github/workflows/publish-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release files
+        uses: actions/checkout@v4
+
+      - name: Publish latest jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          jar="$(ls dist/meow-*.jar | sort -V | tail -n 1)"
+          name="$(basename "$jar" .jar)"
+          version="${name#meow-}"
+          tag="v${version}"
+          notes="Release-only build for Meow ${version}."
+
+          if gh release view "$tag" --repo "$REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$jar" --repo "$REPOSITORY" --clobber
+            gh release edit "$tag" --repo "$REPOSITORY" --title "Meow ${version}" --notes "$notes" --latest
+          else
+            gh release create "$tag" "$jar" --repo "$REPOSITORY" --title "Meow ${version}" --notes "$notes" --latest
+          fi
