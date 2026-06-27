@@ -24,15 +24,26 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          jar="$(ls dist/meow-*.jar | sort -V | tail -n 1)"
-          name="$(basename "$jar" .jar)"
-          version="${name#meow-}"
-          tag="v${version}"
-          notes="Release-only build for Meow ${version}."
+          for jar in $(ls dist/meow-*.jar | sort -V); do
+            name="$(basename "$jar" .jar)"
+            version="${name#meow-}"
+            tag="v${version}"
+            notes="Release-only build for Meow ${version}."
+            latest_flag="--latest"
+            prerelease_flag=""
 
-          if gh release view "$tag" --repo "$REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" "$jar" --repo "$REPOSITORY" --clobber
-            gh release edit "$tag" --repo "$REPOSITORY" --title "Meow ${version}" --notes "$notes" --latest
-          else
-            gh release create "$tag" "$jar" --repo "$REPOSITORY" --title "Meow ${version}" --notes "$notes" --latest
-          fi
+            if [[ "$name" == *"+mc26.1.2" ]]; then
+              notes="${notes} This build is only for Minecraft 26.1.2 and Java 25."
+              latest_flag="--latest=false"
+              prerelease_flag="--prerelease"
+            elif [[ "$name" == *"+mc1.21.11" ]]; then
+              notes="${notes} Final Minecraft 1.21.11 line. Switch to Minecraft 26.1.2 for future updates."
+            fi
+
+            if gh release view "$tag" --repo "$REPOSITORY" >/dev/null 2>&1; then
+              gh release upload "$tag" "$jar" --repo "$REPOSITORY" --clobber
+              gh release edit "$tag" --repo "$REPOSITORY" --title "Meow ${version}" --notes "$notes" $latest_flag
+            else
+              gh release create "$tag" "$jar" --repo "$REPOSITORY" --title "Meow ${version}" --notes "$notes" $latest_flag $prerelease_flag
+            fi
+          done
