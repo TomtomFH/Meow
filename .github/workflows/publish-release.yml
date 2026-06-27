@@ -27,7 +27,8 @@ jobs:
           for jar in $(ls dist/meow-*.jar | sort -V); do
             name="$(basename "$jar" .jar)"
             version="${name#meow-}"
-            tag="v${version}"
+            base_version="${version%%+*}"
+            tag="v${base_version}"
             notes="Release-only build for Meow ${version}."
             latest_flag="--latest"
             prerelease_flag=""
