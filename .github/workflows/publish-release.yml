@@ -24,6 +24,12 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+          for bad_tag in "v1.0.38+mc1.21.11" "v1.0.39+mc26.1.2"; do
+            if gh release view "$bad_tag" --repo "$REPOSITORY" >/dev/null 2>&1; then
+              gh release delete "$bad_tag" --repo "$REPOSITORY" --cleanup-tag -y
+            fi
+          done
+
           for jar in $(ls dist/meow-*.jar | sort -V); do
             name="$(basename "$jar" .jar)"
             version="${name#meow-}"
